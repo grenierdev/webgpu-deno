@@ -47,14 +47,14 @@ const shaderModule = device.createShaderModule({
 		fn vs_main(in: VertexInput) -> VertexOutput {
 			var out: VertexOutput;
 			out.Position = vec4<f32>(
-				f32(-1i + i32(in.Index & 1u) * 2i),
-				f32(-1i + i32(in.Index < 2u) * 2i),
+				mix(-1.0, 1.0, f32(in.Index & 1u)),
+				mix(-1.0, 1.0, f32(in.Index < 2u)),
 				0.0,
-				1.0
+				1.0,
 			);
 			out.TexCoord = vec2<f32>(
-				f32(in.Index & 1u),
-				1.0 - f32(in.Index < 2u)
+				mix(0.0, 1.0, f32(in.Index & 1u)),
+				mix(1.0, 0.0, f32(in.Index < 2u))
 			);
 			return out;
 		}
@@ -141,8 +141,4 @@ const image = encode(
 		color: 2,
 	},
 );
-Deno.writeFileSync("./hello-triangle.png", image);
-
-// const arrayBufferD = gpuBufferD.getMappedRange();
-// console.log(new Float32Array(arrayBufferD));
-// gpuBufferD.unmap();
+await Deno.writeFile("./hello-triangle.png", image);
