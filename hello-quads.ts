@@ -38,17 +38,17 @@ const quadsBuffer = device.createBuffer({
 const quadsArrayBuffer = await quadsBuffer.getMappedRange();
 new Float32Array(quadsArrayBuffer).set([
 	//
-	-1, 1, 0, 0,
-	0, 0, 1, 1,
+	-1, 1,
+	0, 0,
 	// 
-	0, 1, 0, 0,
-	1, 0, 1, 1,
+	0, 1,
+	1, 0,
 	//
-	-1, 0, 0, 0,
-	0, -1, 1, 1,
+	-1, 0,
+	0, -1,
 	// 
-	0, 0, 0, 0,
-	1, -1, 1, 1,
+	0, 0,
+	1, -1,
 ]);
 quadsBuffer.unmap();
 
@@ -61,9 +61,7 @@ const shaderModule = device.createShaderModule({
 
 		struct InstanceInput {
 			@location(5) TopLeftPosition: vec2<f32>,
-			@location(6) TopLeftTexCoord: vec2<f32>,
-			@location(7) BottomRightPosition: vec2<f32>,
-			@location(8) BottomRightTexCoord: vec2<f32>,
+			@location(6) BottomRightPosition: vec2<f32>,
 		};
 
 		struct VertexOutput {
@@ -81,8 +79,8 @@ const shaderModule = device.createShaderModule({
 				1.0,
 			);
 			out.TexCoord = vec2<f32>(
-				mix(inst.TopLeftTexCoord.x, inst.BottomRightTexCoord.x, f32(vert.Index & 1u)),
-				mix(inst.TopLeftTexCoord.y, inst.BottomRightTexCoord.y, f32(vert.Index < 2u))
+				mix(0.0, 1.0, f32(vert.Index & 1u)),
+				1. - mix(1.0, 0.0, f32(vert.Index < 2u))
 			);
 			return out;
 		}
@@ -106,7 +104,7 @@ const renderPipeline = await device.createRenderPipelineAsync({
 		module: shaderModule,
 		buffers: [
 			{
-				arrayStride: 8 * Float32Array.BYTES_PER_ELEMENT,
+				arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
 				stepMode: "instance",
 				attributes: [
 					{
@@ -118,17 +116,7 @@ const renderPipeline = await device.createRenderPipelineAsync({
 						offset: 2 * Float32Array.BYTES_PER_ELEMENT,
 						shaderLocation: 6,
 						format: "float32x2"
-					},
-					{
-						offset: 4 * Float32Array.BYTES_PER_ELEMENT,
-						shaderLocation: 7,
-						format: "float32x2"
-					},
-					{
-						offset: 6 * Float32Array.BYTES_PER_ELEMENT,
-						shaderLocation: 8,
-						format: "float32x2"
-					},
+					}
 				]
 			}
 		]
