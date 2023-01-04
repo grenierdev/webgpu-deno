@@ -66,7 +66,7 @@ const atlasSampler = device.createSampler({
 	minFilter: "linear"
 });
 
-const tileMapData = new Uint32Array(new Array(10 * 10).fill(0).map((_, i) => (i + 1) % 3 ? i : 0));
+const tileMapData = new Uint32Array(new Array(10 * 10).fill(0).map((_, i) => (i + 1) % 3 ? i + 1 : 0));
 const tileMapTexture = device.createTexture({
 	size: {
 		width: 10,
@@ -175,23 +175,31 @@ const shaderModule = device.createShaderModule({
 			// return vec4<f32>(tileUV, 0.5, 1f);							// visualize tile UV
 
 			let tilePosition = vec2<i32>(frag.UV / (1f / tileSizeF32));
-			let tileIdx = textureLoad(TileMapTexture, tilePosition, 0i).r;
+			let tileIdx1 = textureLoad(TileMapTexture, tilePosition, 0i).r;
+			let tileIdx0 = tileIdx1 - 1u;
 
-			// return vec4<f32>(f32(tileIdx) / 255f, 0f, 0f, 1f);			// visualize tile index
+			// return vec4<f32>(f32(tileIdx0) / 255f, 0f, 0f, 1f);			// visualize tile index
 
 			let atlasTileSize = vec2<u32>(10u, 10u);
 
 			let atlasPosition = vec2<u32>(
-				tileIdx % atlasTileSize.x,
-				tileIdx / atlasTileSize.x
+				tileIdx0 % atlasTileSize.x,
+				tileIdx0 / atlasTileSize.x
 			);
 
 			// return vec4<f32>(vec2<f32>(atlasPosition) / 255f, 0f, 1f);	// visualize atlas position
 
 			let atlasUV = vec2<f32>(atlasPosition) / vec2<f32>(atlasTileSize) + tileUV * (1f / tileSizeF32);
-			
+
 			// return vec4<f32>(atlasUV, 0f, 1f);
-			return textureSample(AtlasTexture, AtlasSampler, atlasUV);
+
+			let atlasColor = textureSample(AtlasTexture, AtlasSampler, atlasUV);
+			
+			if tileIdx1 == 0u {
+				discard;
+			} else {
+				return atlasColor;
+			}
 		}
 	`
 });
