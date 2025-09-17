@@ -122,7 +122,7 @@ Deno.test("instancing quads", async (t) => {
 		},
 		primitive: {
 			topology: "triangle-strip",
-			// cullMode: "back",
+			cullMode: "none",
 		},
 	});
 

@@ -99,8 +99,7 @@ Deno.test("triangle mesh", async (t) => {
 			],
 		},
 		primitive: {
-			// topology: "triangle-list",
-			// cullMode: "back",
+			cullMode: "back",
 		},
 	});
 
