@@ -5,7 +5,9 @@
     "jsr:@std/fs@^1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.10": "1.0.10",
     "jsr:@std/path@^1.1.1": "1.1.2",
+    "jsr:@std/path@^1.1.2": "1.1.2",
     "jsr:@std/testing@^1.0.15": "1.0.15",
+    "jsr:@std/text@^1.0.16": "1.0.16",
     "jsr:@std/webgpu@~0.224.8": "0.224.8"
   },
   "jsr": {
@@ -15,7 +17,7 @@
     "@std/fs@1.0.19": {
       "integrity": "051968c2b1eae4d2ea9f79a08a3845740ef6af10356aff43d3e2ef11ed09fb06",
       "dependencies": [
-        "jsr:@std/path"
+        "jsr:@std/path@^1.1.1"
       ]
     },
     "@std/internal@1.0.10": {
@@ -33,8 +35,11 @@
         "jsr:@std/assert",
         "jsr:@std/fs",
         "jsr:@std/internal",
-        "jsr:@std/path"
+        "jsr:@std/path@^1.1.1"
       ]
+    },
+    "@std/text@1.0.16": {
+      "integrity": "ddb9853b75119a2473857d691cf1ec02ad90793a2e8b4a4ac49d7354281a0cf8"
     },
     "@std/webgpu@0.224.8": {
       "integrity": "47c6bab2671dc7c36cb2505167cbf856bde1028be554f7be6463b30f51e4f8a3"
@@ -48,7 +53,9 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/path@^1.1.2",
       "jsr:@std/testing@^1.0.15",
+      "jsr:@std/text@^1.0.16",
       "jsr:@std/webgpu@~0.224.8"
     ]
   }

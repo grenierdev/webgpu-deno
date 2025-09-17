@@ -1,3 +1,4 @@
 .deno
 **/*.png
 !uv_grid_opengl.png
+!__snapshots__/**/*.png

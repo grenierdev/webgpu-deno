@@ -1,6 +1,7 @@
 import { createCapture } from "@std/webgpu/create-capture";
 import { getRowPadding } from "@std/webgpu/row-padding";
 import { assertSnapshot } from "@std/testing/snapshot";
+import { assertOutputBufferFromSnapshot } from "./utils.test.ts";
 
 Deno.test("clear", async (t) => {
 	const adapter = await navigator.gpu.requestAdapter();
@@ -39,9 +40,5 @@ Deno.test("clear", async (t) => {
 
 	device.queue.submit([commandEncoder.finish()]);
 
-	await outputBuffer.mapAsync(GPUMapMode.READ);
-	const outputArrayBuffer = new Uint8Array(outputBuffer.getMappedRange());
-	outputBuffer.unmap();
-
-	await assertSnapshot(t, outputArrayBuffer);
+	await assertOutputBufferFromSnapshot(t, outputBuffer, dimensions);
 });
