@@ -1,1 +1,3 @@
 .deno
+**/*.png
+!uv_grid_opengl.png

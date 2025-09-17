@@ -1,0 +1,17 @@
+{
+	"lint": {
+		"rules": {
+			"tags": ["recommended"],
+			"include": ["explicit-function-return-type"]
+		}
+	},
+	"fmt": {
+		"useTabs": true,
+		"lineWidth": 140
+	},
+	"imports": {
+		"@std/testing": "jsr:@std/testing@^1.0.15",
+		"@std/webgpu": "jsr:@std/webgpu@^0.224.8",
+		"pngs": "https://deno.land/x/pngs@0.1.1/mod.ts"
+	}
+}
