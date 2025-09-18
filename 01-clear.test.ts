@@ -1,7 +1,5 @@
-import { createCapture } from "@std/webgpu/create-capture";
-import { getRowPadding } from "@std/webgpu/row-padding";
-import { assertSnapshot } from "@std/testing/snapshot";
 import { assertOutputBufferFromSnapshot } from "./utils.test.ts";
+import { createCapture } from "./utils.ts";
 
 Deno.test("clear", async (t) => {
 	const adapter = await navigator.gpu.requestAdapter();
@@ -12,7 +10,7 @@ Deno.test("clear", async (t) => {
 		height: 32,
 	};
 
-	const { texture, outputBuffer } = createCapture(device, dimensions.width, dimensions.height);
+	const { texture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height);
 
 	const commandEncoder = device.createCommandEncoder();
 	const renderPass = commandEncoder.beginRenderPass({
@@ -33,7 +31,7 @@ Deno.test("clear", async (t) => {
 		},
 		{
 			buffer: outputBuffer,
-			bytesPerRow: getRowPadding(dimensions.width).padded,
+			bytesPerRow,
 		},
 		dimensions,
 	);
@@ -41,4 +39,6 @@ Deno.test("clear", async (t) => {
 	device.queue.submit([commandEncoder.finish()]);
 
 	await assertOutputBufferFromSnapshot(t, outputBuffer, dimensions);
+
+	device.destroy();
 });
