@@ -1,4 +1,8 @@
 {
+	"tasks": {
+		"test": "deno test -A",
+		"update-tests": "deno test -A -- --update"
+	},
 	"lint": {
 		"rules": {
 			"tags": ["recommended"],

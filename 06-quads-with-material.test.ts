@@ -136,7 +136,7 @@ Deno.test("instancing quads with materials", async (t) => {
 	});
 
 	const { texture: outputTexture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height);
-	const { texture: materialTexture, outputBuffer: materialBuffer } = createCapture(device, dimensions.width, dimensions.height, {
+	const { texture: materialIdTexture, outputBuffer: materialIdBuffer } = createCapture(device, dimensions.width, dimensions.height, {
 		format: "r8uint",
 	});
 
@@ -150,7 +150,7 @@ Deno.test("instancing quads with materials", async (t) => {
 				clearValue: [0, 0, 0, 1],
 			},
 			{
-				view: materialTexture.createView(),
+				view: materialIdTexture.createView(),
 				storeOp: "store",
 				loadOp: "clear",
 				clearValue: [0, 0, 0, 0],
@@ -175,10 +175,10 @@ Deno.test("instancing quads with materials", async (t) => {
 
 	commandEncoder.copyTextureToBuffer(
 		{
-			texture: materialTexture,
+			texture: materialIdTexture,
 		},
 		{
-			buffer: materialBuffer,
+			buffer: materialIdBuffer,
 			bytesPerRow,
 		},
 		dimensions,
@@ -186,9 +186,9 @@ Deno.test("instancing quads with materials", async (t) => {
 
 	device.queue.submit([commandEncoder.finish()]);
 
-	await materialBuffer.mapAsync(GPUMapMode.READ);
-	const materialArrayBuffer = new Uint8Array(materialBuffer.getMappedRange());
-	materialBuffer.unmap();
+	await materialIdBuffer.mapAsync(GPUMapMode.READ);
+	const materialArrayBuffer = new Uint8Array(materialIdBuffer.getMappedRange());
+	materialIdBuffer.unmap();
 
 	await assertOutputBufferFromSnapshot(t, outputBuffer, dimensions);
 	await assertSnapshot(t, materialArrayBuffer);

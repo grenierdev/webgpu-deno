@@ -22,9 +22,10 @@ export function createCapture(
 	options?: {
 		format?: GPUTextureFormat;
 		label?: string;
+		padding?: number;
 	},
 ): CreateCapture {
-	const { padded } = getRowPadding(width);
+	const padded = options?.padding ?? getRowPadding(width).padded;
 	const outputBuffer = device.createBuffer({
 		label: options?.label ?? "Capture",
 		size: padded * height,
