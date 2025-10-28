@@ -1,6 +1,6 @@
 import { fromFileUrl, join, parse } from "@std/path";
 import { slugify } from "@std/text/unstable-slugify";
-import { getRowPadding } from "@std/webgpu/row-padding";
+import { resliceBufferWithPadding } from "@std/webgpu";
 import { encode } from "pngs";
 
 function getMode(): "update" | "assert" {
@@ -25,19 +25,8 @@ function bufferToPng(
 	buffer: Uint8Array,
 	dimensions: { width: number; height: number },
 ): Uint8Array {
-	const { padded, unpadded } = getRowPadding(dimensions.width);
-	const pngBuffer = new Uint8Array(unpadded * dimensions.height);
-
-	for (let i = 0; i < dimensions.height; i++) {
-		const slice = buffer
-			.slice(i * padded, (i + 1) * padded)
-			.slice(0, unpadded);
-
-		pngBuffer.set(slice, i * unpadded);
-	}
-
 	const image = encode(
-		pngBuffer,
+		buffer,
 		dimensions.width,
 		dimensions.height,
 		{
@@ -55,7 +44,11 @@ export async function assertOutputBufferFromSnapshot(
 	dimensions: { width: number; height: number },
 ): Promise<void> {
 	await outputBuffer.mapAsync(GPUMapMode.READ);
-	const outputArrayBuffer = new Uint8Array(outputBuffer.getMappedRange());
+	const outputArrayBuffer = resliceBufferWithPadding(
+		new Uint8Array(outputBuffer.getMappedRange()),
+		dimensions.width,
+		dimensions.height,
+	);
 	outputBuffer.unmap();
 
 	await assertSnapshot(t, bufferToPng(outputArrayBuffer, dimensions), { ext: "png" });
