@@ -1,7 +1,7 @@
 import { fromFileUrl, join, parse } from "@std/path";
 import { slugify } from "@std/text/unstable-slugify";
 import { resliceBufferWithPadding } from "@std/webgpu";
-import { encode } from "pngs";
+import { ColorType, encode } from "pngs";
 
 function getMode(): "update" | "assert" {
 	return Deno.args.some((arg) => arg === "--update" || arg === "-u") ? "update" : "assert";
@@ -30,8 +30,8 @@ function bufferToPng(
 		dimensions.width,
 		dimensions.height,
 		{
-			stripAlpha: true,
-			color: 2,
+			stripAlpha: false,
+			color: ColorType.RGBA,
 		},
 	);
 

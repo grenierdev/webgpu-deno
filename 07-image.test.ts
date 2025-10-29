@@ -36,10 +36,10 @@ Deno.test("image", async (t) => {
 		usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
 		// deno-fmt-ignore
 		contents: new Float32Array([
-			-1, -1, 0, 0,
-			1, -1, 1, 0,
-			-1, 1, 0, 1,
-			1, 1, 1, 1,
+			-1, -1, 0, 1,
+			1, -1, 1, 1,
+			-1, 1, 0, 0,
+			1, 1, 1, 0,
 		]),
 	});
 	const indexBuffer = createBufferWithContents(device, {
@@ -77,11 +77,7 @@ Deno.test("image", async (t) => {
 
 			@fragment
 			fn fs_main(frag: VertexOutput) -> @location(0) vec4<f32> {
-				// var t: vec4<f32>;
-				// t = textureSample(ourTexture, ourSampler, frag.UV);
-				// return vec4<f32>(t.xy, 1.0, 1.0);
 				return textureSample(ourTexture, ourSampler, frag.UV);
-				// return vec4<f32>(frag.UV, 0.0, 1.0);
 			}
 		`,
 	});
@@ -140,7 +136,7 @@ Deno.test("image", async (t) => {
 			// entryPoint: "fs_main",
 			targets: [
 				{
-					format: "rgba8unorm-srgb",
+					format: "rgba8unorm",
 				},
 			],
 		},
@@ -157,7 +153,7 @@ Deno.test("image", async (t) => {
 		],
 	});
 
-	const { texture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height);
+	const { texture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height, { format: "rgba8unorm" });
 
 	const commandEncoder = device.createCommandEncoder();
 	const renderPass = commandEncoder.beginRenderPass({
