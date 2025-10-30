@@ -151,18 +151,18 @@ Deno.test("quads blending", async (t) => {
 			targets: [
 				{
 					format: "rgba8unorm",
-					blend: {
-						color: {
-							operation: "add",
-							srcFactor: "one",
-							dstFactor: "zero",
-						},
-						alpha: {
-							operation: "add",
-							srcFactor: "one",
-							dstFactor: "zero",
-						},
-					},
+					// blend: {
+					// 	color: {
+					// 		operation: "add",
+					// 		srcFactor: "one",
+					// 		dstFactor: "zero",
+					// 	},
+					// 	alpha: {
+					// 		operation: "add",
+					// 		srcFactor: "one",
+					// 		dstFactor: "zero",
+					// 	},
+					// },
 				},
 			],
 		},
@@ -202,18 +202,45 @@ Deno.test("quads blending", async (t) => {
 			targets: [
 				{
 					format: "rgba8unorm",
+					// https://webgpufundamentals.org/webgpu/lessons/webgpu-transparency.html#blend-settings
 					// https://ssp.impulsetrain.com/porterduff.html
 					blend: {
-						color: {
-							operation: "add",
-							srcFactor: "one",
-							dstFactor: "zero",
-						},
-						alpha: {
-							operation: "add",
-							srcFactor: "one",
-							dstFactor: "zero",
-						},
+						// // Source
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+						// // Atop
+						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
+						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+						// Over
+						color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
+						alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
+						// // In
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
+						// // Out
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
+						// // Dest
+						// color: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+						// // Dest Atop
+						// color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+						// // Dest Over
+						// color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+						// alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
+						// // Dest In
+						// color: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
+						// alpha: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
+						// // Dest Out
+						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
+						// alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
+						// // Clear
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
+						// // Xor
+						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "one-minus-src-alpha" },
+						// alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "one-minus-src-alpha" },
 					},
 				},
 			],
@@ -241,13 +268,14 @@ Deno.test("quads blending", async (t) => {
 	const { texture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height, { format: "rgba8unorm" });
 
 	const commandEncoder = device.createCommandEncoder();
+
 	const renderPass1 = commandEncoder.beginRenderPass({
 		colorAttachments: [
 			{
 				view: texture.createView(),
 				storeOp: "store",
 				loadOp: "clear",
-				clearValue: [0, 0, 0, 1],
+				clearValue: [0, 0, 0, 0],
 			},
 		],
 	});
@@ -257,13 +285,14 @@ Deno.test("quads blending", async (t) => {
 	renderPass1.setVertexBuffer(0, vertexBuffer);
 	renderPass1.drawIndexed(6, 1, 0, 0, 0);
 	renderPass1.end();
+
 	const renderPass2 = commandEncoder.beginRenderPass({
 		colorAttachments: [
 			{
 				view: texture.createView(),
 				storeOp: "store",
-				loadOp: "clear",
-				clearValue: [0, 0, 0, 1],
+				loadOp: "load",
+				clearValue: [0, 0, 0, 0],
 			},
 		],
 	});
