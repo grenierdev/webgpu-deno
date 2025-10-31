@@ -206,35 +206,35 @@ Deno.test("quads blending", async (t) => {
 					// https://ssp.impulsetrain.com/porterduff.html
 					blend: {
 						// // Source
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "one" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
-						// // Atop
-						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
-						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
-						// Over
-						color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
-						alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
-						// // In
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
-						// // Out
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
-						// // Dest
 						// color: { operation: "add", srcFactor: "one", dstFactor: "zero" },
 						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
-						// // Dest Atop
+						// // Atop
 						// color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
 						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
-						// // Dest Over
-						// color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
-						// alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
-						// // Dest In
+						// Over
+						color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+						alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
+						// // In
 						// color: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
 						// alpha: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
-						// // Dest Out
+						// // Out
 						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
 						// alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
+						// // Dest
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+						// // Dest Atop
+						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
+						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+						// // Dest Over
+						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
+						// alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
+						// // Dest In
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
+						// // Dest Out
+						// color: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
+						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
 						// // Clear
 						// color: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
 						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
@@ -250,14 +250,14 @@ Deno.test("quads blending", async (t) => {
 		},
 	});
 
-	const bindGroup1 = device.createBindGroup({
-		layout: renderPipeline1.getBindGroupLayout(0),
+	const bindGroup2 = device.createBindGroup({
+		layout: renderPipeline2.getBindGroupLayout(0),
 		entries: [
 			{ binding: 0, resource: srcTexture.createView() },
 			{ binding: 1, resource: sampler },
 		],
 	});
-	const bindGroup2 = device.createBindGroup({
+	const bindGroup1 = device.createBindGroup({
 		layout: renderPipeline1.getBindGroupLayout(0),
 		entries: [
 			{ binding: 0, resource: dstTexture.createView() },
