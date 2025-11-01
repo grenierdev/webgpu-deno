@@ -5,11 +5,17 @@ import { decode } from "pngs";
 
 Deno.test("quads blending", async (t) => {
 	const adapter = await navigator.gpu.requestAdapter();
-	const device = await adapter?.requestDevice()!;
+	const device = await adapter?.requestDevice({
+		requiredFeatures: ["dual-source-blending"],
+	})!;
+
+	device.addEventListener("uncapturederror", (event) => {
+		console.error("Uncaptured GPU error:", (event as any).error.message);
+	});
 
 	const dimensions = {
-		width: 32,
-		height: 32,
+		width: 32 * 5,
+		height: 32 * 3,
 	};
 
 	const srcImageData = await Deno.readFile("./src.png");
@@ -43,6 +49,8 @@ Deno.test("quads blending", async (t) => {
 		},
 		dstImage.image as Uint8Array<ArrayBuffer>,
 	);
+
+	const { texture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height, { format: "rgba8unorm" });
 
 	// vec2(position), vec2(uv)
 	const vertexBuffer = createBufferWithContents(device, {
@@ -78,6 +86,10 @@ Deno.test("quads blending", async (t) => {
 				@location(0) UV: vec2<f32>,
 			};
 
+			struct FragmentOutput {
+				@location(0) color: vec4<f32>,
+			};
+
             @group(0) @binding(0) var ourTexture: texture_2d<f32>;
 			@group(0) @binding(1) var ourSampler: sampler;
 
@@ -90,8 +102,10 @@ Deno.test("quads blending", async (t) => {
 			}
 
 			@fragment
-			fn fs_main(frag: VertexOutput) -> @location(0) vec4<f32> {
-				return textureSample(ourTexture, ourSampler, frag.UV);
+			fn fs_main(frag: VertexOutput) -> FragmentOutput {
+				var output: FragmentOutput;
+				output.color = textureSample(ourTexture, ourSampler, frag.UV);
+				return output;
 			}
 		`,
 	});
@@ -119,189 +133,224 @@ Deno.test("quads blending", async (t) => {
 		minFilter: "nearest",
 	});
 
-	const renderPipeline1 = device.createRenderPipeline({
-		label: "Pipeline1",
-		layout: pipelineLayout,
-		// layout: "auto",
-		vertex: {
-			module: shaderModule,
-			// entryPoint: "vs_main",
-			buffers: [
-				{
-					arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
-					stepMode: "vertex",
-					attributes: [
-						{
-							format: "float32x2",
-							offset: 0,
-							shaderLocation: 0,
-						},
-						{
-							format: "float32x2",
-							offset: 2 * Float32Array.BYTES_PER_ELEMENT,
-							shaderLocation: 1,
-						},
-					],
-				},
-			],
+	// https://webgpufundamentals.org/webgpu/lessons/webgpu-transparency.html#blend-settings
+	// https://ssp.impulsetrain.com/porterduff.html
+	const blends: GPUBlendState[] = [
+		{
+			// Source
+			color: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+			alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
 		},
-		fragment: {
-			module: shaderModule,
-			// entryPoint: "fs_main",
-			targets: [
-				{
-					format: "rgba8unorm",
-					// blend: {
-					// 	color: {
-					// 		operation: "add",
-					// 		srcFactor: "one",
-					// 		dstFactor: "zero",
-					// 	},
-					// 	alpha: {
-					// 		operation: "add",
-					// 		srcFactor: "one",
-					// 		dstFactor: "zero",
-					// 	},
-					// },
-				},
-			],
+		{
+			// Atop
+			color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+			alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
 		},
-		primitive: {
-			cullMode: "back",
+		{
+			// Over
+			color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
+			alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
 		},
-	});
-	const renderPipeline2 = device.createRenderPipeline({
-		label: "Pipeline2",
-		layout: pipelineLayout,
-		// layout: "auto",
-		vertex: {
-			module: shaderModule,
-			// entryPoint: "vs_main",
-			buffers: [
-				{
-					arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
-					stepMode: "vertex",
-					attributes: [
-						{
-							format: "float32x2",
-							offset: 0,
-							shaderLocation: 0,
-						},
-						{
-							format: "float32x2",
-							offset: 2 * Float32Array.BYTES_PER_ELEMENT,
-							shaderLocation: 1,
-						},
-					],
-				},
-			],
+		{
+			// In
+			color: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
+			alpha: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
 		},
-		fragment: {
-			module: shaderModule,
-			// entryPoint: "fs_main",
-			targets: [
-				{
-					format: "rgba8unorm",
-					// https://webgpufundamentals.org/webgpu/lessons/webgpu-transparency.html#blend-settings
-					// https://ssp.impulsetrain.com/porterduff.html
-					blend: {
-						// // Source
-						// color: { operation: "add", srcFactor: "one", dstFactor: "zero" },
-						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
-						// // Atop
-						// color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
-						// Over
-						color: { operation: "add", srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha" },
-						alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
-						// // In
-						// color: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
-						// alpha: { operation: "add", srcFactor: "dst-alpha", dstFactor: "zero" },
-						// // Out
-						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
-						// alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
-						// // Dest
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "one" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
-						// // Dest Atop
-						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
-						// alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
-						// // Dest Over
-						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
-						// alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
-						// // Dest In
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
-						// // Dest Out
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
-						// // Clear
-						// color: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
-						// alpha: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
-						// // Xor
-						// color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "one-minus-src-alpha" },
-						// alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "one-minus-src-alpha" },
+		{
+			// Out
+			color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
+			alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "zero" },
+		},
+		{
+			// Dest
+			color: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+			alpha: { operation: "add", srcFactor: "zero", dstFactor: "one" },
+		},
+		{
+			// Dest Atop
+			color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
+			alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+		},
+		{
+			// Dest Over
+			color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "dst-alpha" },
+			alpha: { operation: "add", srcFactor: "one", dstFactor: "one" },
+		},
+		{
+			// Dest In
+			color: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
+			alpha: { operation: "add", srcFactor: "zero", dstFactor: "src-alpha" },
+		},
+		{
+			// Dest Out
+			color: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
+			alpha: { operation: "add", srcFactor: "zero", dstFactor: "one-minus-src-alpha" },
+		},
+		{
+			// Clear
+			color: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
+			alpha: { operation: "add", srcFactor: "zero", dstFactor: "zero" },
+		},
+		{
+			// Xor
+			color: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "one-minus-src-alpha" },
+			alpha: { operation: "add", srcFactor: "one-minus-dst-alpha", dstFactor: "one-minus-src-alpha" },
+		},
+	];
+
+	for (let i = 0; i < blends.length; i++) {
+		const blend = blends[i];
+		const renderPipeline1 = device.createRenderPipeline({
+			label: "Pipeline1",
+			layout: pipelineLayout,
+			// layout: "auto",
+			vertex: {
+				module: shaderModule,
+				// entryPoint: "vs_main",
+				buffers: [
+					{
+						arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
+						stepMode: "vertex",
+						attributes: [
+							{
+								format: "float32x2",
+								offset: 0,
+								shaderLocation: 0,
+							},
+							{
+								format: "float32x2",
+								offset: 2 * Float32Array.BYTES_PER_ELEMENT,
+								shaderLocation: 1,
+							},
+						],
 					},
+				],
+			},
+			fragment: {
+				module: shaderModule,
+				// entryPoint: "fs_main",
+				targets: [
+					{
+						format: "rgba8unorm",
+					},
+				],
+			},
+			primitive: {
+				cullMode: "back",
+			},
+		});
+		const renderPipeline2 = device.createRenderPipeline({
+			label: "Pipeline2",
+			layout: pipelineLayout,
+			// layout: "auto",
+			vertex: {
+				module: shaderModule,
+				// entryPoint: "vs_main",
+				buffers: [
+					{
+						arrayStride: 4 * Float32Array.BYTES_PER_ELEMENT,
+						stepMode: "vertex",
+						attributes: [
+							{
+								format: "float32x2",
+								offset: 0,
+								shaderLocation: 0,
+							},
+							{
+								format: "float32x2",
+								offset: 2 * Float32Array.BYTES_PER_ELEMENT,
+								shaderLocation: 1,
+							},
+						],
+					},
+				],
+			},
+			fragment: {
+				module: shaderModule,
+				// entryPoint: "fs_main",
+				targets: [
+					{
+						format: "rgba8unorm",
+						blend,
+					},
+				],
+			},
+			primitive: {
+				cullMode: "back",
+			},
+		});
+
+		const bindGroup2 = device.createBindGroup({
+			layout: renderPipeline2.getBindGroupLayout(0),
+			entries: [
+				{ binding: 0, resource: srcTexture.createView() },
+				{ binding: 1, resource: sampler },
+			],
+		});
+		const bindGroup1 = device.createBindGroup({
+			layout: renderPipeline1.getBindGroupLayout(0),
+			entries: [
+				{ binding: 0, resource: dstTexture.createView() },
+				{ binding: 1, resource: sampler },
+			],
+		});
+
+		const commandEncoder = device.createCommandEncoder();
+
+		const renderPass1 = commandEncoder.beginRenderPass({
+			colorAttachments: [
+				{
+					view: texture.createView(),
+					storeOp: "store",
+					loadOp: "load",
+					clearValue: [0, 0, 0, 0],
 				},
 			],
-		},
-		primitive: {
-			cullMode: "back",
-		},
-	});
+		});
+		renderPass1.setViewport(
+			32 * (i % 5),
+			32 * Math.floor(i / 5),
+			32,
+			32,
+			0,
+			1,
+		);
+		renderPass1.setPipeline(renderPipeline1);
+		renderPass1.setBindGroup(0, bindGroup1);
+		renderPass1.setIndexBuffer(indexBuffer, "uint16");
+		renderPass1.setVertexBuffer(0, vertexBuffer);
+		renderPass1.drawIndexed(6, 1, 0, 0, 0);
+		renderPass1.end();
 
-	const bindGroup2 = device.createBindGroup({
-		layout: renderPipeline2.getBindGroupLayout(0),
-		entries: [
-			{ binding: 0, resource: srcTexture.createView() },
-			{ binding: 1, resource: sampler },
-		],
-	});
-	const bindGroup1 = device.createBindGroup({
-		layout: renderPipeline1.getBindGroupLayout(0),
-		entries: [
-			{ binding: 0, resource: dstTexture.createView() },
-			{ binding: 1, resource: sampler },
-		],
-	});
+		const renderPass2 = commandEncoder.beginRenderPass({
+			colorAttachments: [
+				{
+					view: texture.createView(),
+					storeOp: "store",
+					loadOp: "load",
+					clearValue: [0, 0, 0, 0],
+				},
+			],
+		});
+		renderPass2.setViewport(
+			32 * (i % 5),
+			32 * Math.floor(i / 5),
+			32,
+			32,
+			0,
+			1,
+		);
+		renderPass2.setPipeline(renderPipeline2);
+		renderPass2.setBindGroup(0, bindGroup2);
+		renderPass2.setIndexBuffer(indexBuffer, "uint16");
+		renderPass2.setVertexBuffer(0, vertexBuffer);
+		renderPass2.drawIndexed(6, 1, 0, 0, 0);
+		renderPass2.end();
 
-	const { texture, outputBuffer, bytesPerRow } = createCapture(device, dimensions.width, dimensions.height, { format: "rgba8unorm" });
+		device.queue.submit([commandEncoder.finish()]);
+	}
 
 	const commandEncoder = device.createCommandEncoder();
-
-	const renderPass1 = commandEncoder.beginRenderPass({
-		colorAttachments: [
-			{
-				view: texture.createView(),
-				storeOp: "store",
-				loadOp: "clear",
-				clearValue: [0, 0, 0, 0],
-			},
-		],
-	});
-	renderPass1.setPipeline(renderPipeline1);
-	renderPass1.setBindGroup(0, bindGroup1);
-	renderPass1.setIndexBuffer(indexBuffer, "uint16");
-	renderPass1.setVertexBuffer(0, vertexBuffer);
-	renderPass1.drawIndexed(6, 1, 0, 0, 0);
-	renderPass1.end();
-
-	const renderPass2 = commandEncoder.beginRenderPass({
-		colorAttachments: [
-			{
-				view: texture.createView(),
-				storeOp: "store",
-				loadOp: "load",
-				clearValue: [0, 0, 0, 0],
-			},
-		],
-	});
-	renderPass2.setPipeline(renderPipeline2);
-	renderPass2.setBindGroup(0, bindGroup2);
-	renderPass2.setIndexBuffer(indexBuffer, "uint16");
-	renderPass2.setVertexBuffer(0, vertexBuffer);
-	renderPass2.drawIndexed(6, 1, 0, 0, 0);
-	renderPass2.end();
 
 	commandEncoder.copyTextureToBuffer(
 		{ texture },

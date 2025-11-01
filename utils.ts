@@ -65,3 +65,22 @@ export function createBufferWithContents(
 	buffer.unmap();
 	return buffer;
 }
+
+export function resliceBufferWithPadding(
+	buffer: Uint8Array,
+	width: number,
+	height: number,
+): Uint8Array {
+	const { padded, unpadded } = getRowPadding(width);
+	const outputBuffer = new Uint8Array(unpadded * height);
+
+	for (let i = 0; i < height; i++) {
+		const slice = buffer
+			.subarray(i * padded, (i + 1) * padded)
+			.subarray(0, unpadded);
+
+		outputBuffer.set(slice, i * unpadded);
+	}
+
+	return outputBuffer;
+}

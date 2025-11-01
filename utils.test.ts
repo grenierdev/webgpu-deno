@@ -1,7 +1,7 @@
 import { fromFileUrl, join, parse } from "@std/path";
 import { slugify } from "@std/text/unstable-slugify";
-import { resliceBufferWithPadding } from "@std/webgpu";
 import { ColorType, encode } from "pngs";
+import { resliceBufferWithPadding } from "./utils.ts";
 
 function getMode(): "update" | "assert" {
 	return Deno.args.some((arg) => arg === "--update" || arg === "-u") ? "update" : "assert";
